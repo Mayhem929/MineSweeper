@@ -3,7 +3,9 @@ import functools
 import random
 
 clicknum = 0
+counter = 0
 gameover = False
+colors = ["blue", "green", "red", "orange", "pink", "black", "cyan"]
 
 class Board:
 
@@ -29,13 +31,21 @@ class Board:
 
             for i in range(self.mines):
 
-                x = random.randint(1, self.rows)
-                y = random.randint(1, self.cols)
+                x = random.randint(0, self.rows-1)
+                y = random.randint(0, self.cols-1)
 
                 while self.values[x][y] == -1 or self.values[x][y] == -2 :
 
-                    x = random.randint(1, self.rows)
-                    y = random.randint(1, self.cols)
+                    global counter
+                    counter +=1
+
+
+                    x = random.randint(0, self.rows-1)
+                    y = random.randint(0, self.cols-1)
+
+                    if counter % 1000000 == 0:
+                        print(counter, x, y, i)
+
 
                 self.values[x][y] = -1
 
@@ -64,7 +74,8 @@ class Board:
 
                                                 self.values[k][l] += 1
 
-root = Tk()
+window = Tk()
+window.title("MineSweeper")
 
 def left_click(event):
     event.widget.configure(bg="green")
@@ -73,14 +84,14 @@ def left_click(event):
 def right_click(event):
     event.widget.configure(bg="red")
 
-board = Board(8,8,10)
+board = Board(10, 10, 90)
 
 buttons = []
 
-for y in range(0, board.rows):
+for x in range(0, board.rows):
     buttons.append([])
-    for x in range(0, board.cols):
-        b = Button(root, text=" ", width=2, command=lambda x=x, y=y: clickOn(x, y))
+    for y in range(0, board.cols):
+        b = Button(window, text=" ", activeforeground="blue", font=4, height=2, bg="grey", width=4, command=lambda x=x,y=y: clickOn(x,y))
         b.bind("<Button-3>", lambda e, x=x, y=y: onRightClick(x, y))
         b.grid(row=x + 1, column=y, sticky=N + W + S + E)
         buttons[x].append(b)
@@ -102,18 +113,26 @@ def clickOn(x,y):
 
     if board.values[x][y] == -1:
         buttons[x][y]["text"] = "*"
-        gameover = True
+        buttons[x][y]["bg"] = "red"
+        buttons[x][y]["state"] = "disabled"
 
     if 9 > board.values[x][y] > 0:
-        buttons[x][y]["text"] = board.values[x][y]
+        buttons[x][y]["text"] = str(board.values[x][y])
+        buttons[x][y]["bg"] = "white"
+        buttons[x][y]["disabledforeground"] = colors[board.values[x][y]-1]
+        buttons[x][y]["state"] = "disabled"
         board.shown[x][y] = True
 
     if board.values[x][y] == 0:
 
+        buttons[x][y]["text"] = " "
+        buttons[x][y]["bg"] = "white"
+        buttons[x][y]["state"] = "disabled"
+        board.shown[x][y] = True
         for i in range(x - 1, x + 2):
             for j in range(y - 1, y + 2):
-                if 0 <= i < board.rows and 0 <= j < board.cols:
+                if 0 <= i < board.rows and 0 <= j < board.cols and (i != x or j != y) and not board.shown[i][j]:
                     clickOn(i,j)
 
 
-root.mainloop()
+window.mainloop()
