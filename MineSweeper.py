@@ -4,13 +4,12 @@ import time
 
 clicknum = 0
 counter = 0
-gameover = False
 colors = ["blue", "green", "red", "orange", "pink", "black", "cyan", "purple"]
 
 
 class Board:
 
-    def __init__(self, r, c, m, ):
+    def __init__(self, r, c, m):
 
         self.rows = r
         self.cols = c
@@ -75,10 +74,11 @@ class Board:
 window = Tk()
 window.title("MineSweeper")
 
-# Create board object
-board = Board(10, 10, 91)
+# Create board object and win condition
+board = Board(8, 8, 10)
 
-h = board.cols * board.rows
+boxes_left = board.cols * board.rows - board.mines
+
 # Create button matrix and display it
 buttons = []
 
@@ -92,44 +92,58 @@ for x in range(0, board.rows):
         buttons[x].append(b)
 
 
+# Flag mechanics.
 def onRightClick(x, y):
-    return
+    if buttons[x][y]["text"] == "!":
+        buttons[x][y]["text"] = "?"
+    elif buttons[x][y]["text"] == "?":
+        buttons[x][y]["text"] = " "
+    else:
+        buttons[x][y]["text"] = "!"
 
 
+# Recursive function, reveals the clicked box and if it's an empty box it shows al the nearby ones by executing this
+# same function on them. If its a mine, you lose instantly and the program is interrupted. It also checks the number of
+# boxes left to win, and when the number reaches 0, it shows the win screen.
 def clickOn(x, y):
-    global buttons, clicknum, gameover, board, h
+    global buttons, clicknum, board, boxes_left
     clicknum += 1
 
+    # We set up the board right after the first click, in order not to lose instantly
     if clicknum == 1:
         board.set_mines(x, y)
 
-    if board.shown[x][y] == 1:
-        return
-
+    # Case box is a bomb
     if board.values[x][y] == -1:
         buttons[x][y]["text"] = "*"
         buttons[x][y]["bg"] = "red"
         buttons[x][y]["state"] = "disabled"
         for widget in window.winfo_children():
             widget["state"] = "disabled"
-            h -= 1
-        window2 = Tk()
+            boxes_left -= 1
 
-        b = Button(window2, height=20, width=40, text="Has perdido bro", command=lambda: exit())
-        b.grid(row=0, column=0)
+        # Loss screen
+        window2 = Tk()
+        window2.title("pringao")
+        l = Label(window2, text="Eres un mierdas", font=20, padx=40, pady=20)
+        l.grid(row=0, column=0)
+        b = Button(window2, width=4, text="ok :'(", font=20, bg="grey", command=lambda: exit())
+        b.grid(row=1, column=0)
         window2.mainloop()
 
+    # Case box has mines close
     if 9 > board.values[x][y] > 0:
         buttons[x][y]["text"] = str(board.values[x][y])
         buttons[x][y]["bg"] = "white"
         buttons[x][y]["disabledforeground"] = colors[board.values[x][y] - 1]
         buttons[x][y]["state"] = "disabled"
         board.shown[x][y] = True
-        h -= 1
+        boxes_left -= 1
 
+    # Case box has no mines close. Recursion is applied here
     if board.values[x][y] == 0:
 
-        h -= 1
+        boxes_left -= 1
         buttons[x][y]["text"] = " "
         buttons[x][y]["bg"] = "white"
         buttons[x][y]["state"] = "disabled"
@@ -139,16 +153,23 @@ def clickOn(x, y):
                 if 0 <= i < board.rows and 0 <= j < board.cols and (i != x or j != y) and not board.shown[i][j]:
                     clickOn(i, j)
 
-    if h == board.mines:
+    # Check win condition
+    if boxes_left == 0:
         print("has ganao")
         for widget in window.winfo_children():
             widget["state"] = "disabled"
-            h -= 1
-        # parar coronometro
-        window2 = Tk()
 
-        b = Button(window2, height=10, width=20, text="Has ganado tiaco", font=20, command=lambda: exit())
-        b.grid(row=0, column=0)
+        # To avoid further win checks
+        boxes_left -= 1
+        # parar coronometro
+
+        # Win screen
+        window2 = Tk()
+        window2.title("epico")
+        l = Label(window2, text="Has ganao tiaco", font=20, padx=20, pady=20)
+        l.grid(row=0, column=0)
+        b = Button(window2, width=6, text="yay! :D", font=20, bg="blue", command=lambda: exit())
+        b.grid(row=1, column=0)
         window2.mainloop()
 
 
