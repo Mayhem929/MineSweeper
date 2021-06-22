@@ -1,2 +1,3 @@
 # MineSweeper
-intento de buscaminas en python
+Needs tkinter to be installed 
+There will soon be an executable available 
