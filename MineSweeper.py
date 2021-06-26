@@ -1,9 +1,8 @@
 from tkinter import *
 import random
-import time
+from datetime import datetime
 
-clicknum = 0
-counter = 0
+clicks = 0
 colors = ["blue", "green", "red", "orange", "pink", "black", "cyan", "purple"]
 
 
@@ -14,6 +13,8 @@ class Board:
         self.rows = r
         self.cols = c
         self.mines = m
+        self.boxes_left = r * c - m
+        self.mine_pos = []
         self.shown = [[0] * self.cols for i in range(self.rows)]
         self.values = [[0] * self.cols for i in range(self.rows)]
 
@@ -34,17 +35,11 @@ class Board:
             y = random.randint(0, self.cols - 1)
 
             while self.values[x][y] == -1 or self.values[x][y] == -2:
-
-                global counter
-                counter += 1
-
                 x = random.randint(0, self.rows - 1)
                 y = random.randint(0, self.cols - 1)
 
-                if counter % 1000000 == 0:
-                    print(counter, x, y, i)
-
             self.values[x][y] = -1
+            self.mine_pos.append((x, y))
 
         aux1 = -1
         while aux1 <= 1:
@@ -71,46 +66,65 @@ class Board:
                                     self.values[k][l] += 1
 
 
+###################################################################################
+################################### GUI PART ######################################
+###################################################################################
+
 window = Tk()
 window.title("MineSweeper")
 
-# Create board object and win condition
-board = Board(8, 8, 10)
+# label1 = Label(window, text="Select difficulty", font=20)
+# label1.grid(row=0, column=0, columnspan=8)
 
-boxes_left = board.cols * board.rows - board.mines
+# Create board object
+
+rows = 8
+cols = 8
+mines = 10
+
+board = Board(rows, cols, mines)
 
 # Create button matrix and display it
 buttons = []
 
-for x in range(0, board.rows):
-    buttons.append([])
-    for y in range(0, board.cols):
-        b = Button(window, text=" ", font=4, height=2, bg="grey", width=4,
-                   command=lambda x=x, y=y: clickOn(x, y))
-        b.bind("<Button-3>", lambda e, x=x, y=y: onRightClick(x, y))
-        b.grid(row=x + 1, column=y, sticky=N + W + S + E)
-        buttons[x].append(b)
+
+def BuildBoard():
+    global buttons
+    global board
+
+    for x in range(0, board.rows):
+        buttons.append([])
+        for y in range(0, board.cols):
+            b = Button(window, text=" ", font=4, height=2, bg="grey", width=4,
+                       command=lambda x=x, y=y: clickOn(x, y))
+            b.bind("<Button-3>", lambda e, x=x, y=y: onRightClick(x, y))
+            b.grid(row=x + 1, column=y, sticky=N + W + S + E)
+            buttons[x].append(b)
+
+
+BuildBoard()
 
 
 # Flag mechanics.
 def onRightClick(x, y):
-    if buttons[x][y]["text"] == "!":
-        buttons[x][y]["text"] = "?"
-    elif buttons[x][y]["text"] == "?":
-        buttons[x][y]["text"] = " "
-    else:
-        buttons[x][y]["text"] = "!"
+    if not board.shown[x][y]:
+        if buttons[x][y]["text"] == "!":
+            buttons[x][y]["text"] = "?"
+        elif buttons[x][y]["text"] == "?":
+            buttons[x][y]["text"] = " "
+        else:
+            buttons[x][y]["text"] = "!"
 
 
 # Recursive function, reveals the clicked box and if it's an empty box it shows al the nearby ones by executing this
 # same function on them. If its a mine, you lose instantly and the program is interrupted. It also checks the number of
 # boxes left to win, and when the number reaches 0, it shows the win screen.
 def clickOn(x, y):
-    global buttons, clicknum, board, boxes_left
-    clicknum += 1
+    global buttons, clicks, board, rows, cols, mines
+    clicks += 1
 
     # We set up the board right after the first click, in order not to lose instantly
-    if clicknum == 1:
+    if clicks == 1:
         board.set_mines(x, y)
 
     # Case box is a bomb
@@ -118,14 +132,32 @@ def clickOn(x, y):
         buttons[x][y]["text"] = "*"
         buttons[x][y]["bg"] = "red"
         buttons[x][y]["state"] = "disabled"
+
+        board.mine_pos.remove((x, y))
+        shown_mines = 0
+        t1 = datetime.now()
+        a = 1 / 3
+
+        while shown_mines < len(board.mine_pos):
+            t2 = datetime.now()
+            m = (t2.minute * 60 + t2.second + (int(t2.microsecond / 100000) / 10) - t1.minute * 60 - t1.second - (
+                    int(t1.microsecond / 100000) / 10))
+            if m > a:
+                a += 1 / 3
+                i = board.mine_pos[shown_mines][0]
+                j = board.mine_pos[shown_mines][1]
+                shown_mines += 1
+                buttons[i][j]["text"] = "*"
+                buttons[i][j]["bg"] = "red"
+                window.update_idletasks()
+
         for widget in window.winfo_children():
             widget["state"] = "disabled"
-            boxes_left -= 1
 
         # Loss screen
         window2 = Tk()
         window2.title("pringao")
-        l = Label(window2, text="Eres un mierdas", font=20, padx=40, pady=20)
+        l = Label(window2, text="Eres malardo", font=20, padx=80, pady=20)
         l.grid(row=0, column=0)
         b = Button(window2, width=4, text="ok :'(", font=20, bg="grey", command=lambda: exit())
         b.grid(row=1, column=0)
@@ -138,12 +170,12 @@ def clickOn(x, y):
         buttons[x][y]["disabledforeground"] = colors[board.values[x][y] - 1]
         buttons[x][y]["state"] = "disabled"
         board.shown[x][y] = True
-        boxes_left -= 1
+        board.boxes_left -= 1
 
     # Case box has no mines close. Recursion is applied here
     if board.values[x][y] == 0:
 
-        boxes_left -= 1
+        board.boxes_left -= 1
         buttons[x][y]["text"] = " "
         buttons[x][y]["bg"] = "white"
         buttons[x][y]["state"] = "disabled"
@@ -154,13 +186,13 @@ def clickOn(x, y):
                     clickOn(i, j)
 
     # Check win condition
-    if boxes_left == 0:
+    if board.boxes_left == 0:
         print("has ganao")
         for widget in window.winfo_children():
             widget["state"] = "disabled"
 
         # To avoid further win checks
-        boxes_left -= 1
+        board.boxes_left -= 1
         # parar coronometro
 
         # Win screen
