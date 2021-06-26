@@ -78,9 +78,9 @@ window.title("MineSweeper")
 
 # Create board object
 
-rows = 8
-cols = 8
-mines = 10
+rows = 13
+cols = 13
+mines = 27  #Adri guapo
 
 board = Board(rows, cols, mines)
 
