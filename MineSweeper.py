@@ -1,15 +1,30 @@
 from tkinter import *
 import random
-from datetime import datetime
+import time
+import threading
 
 clicks = 0
 colors = ["blue", "green", "red", "orange", "pink", "black", "cyan", "purple"]
+buttons = []
+speed = 1 / 5
 
+
+###################################################################################
+################################# Board Class #####################################
+###################################################################################
 
 class Board:
 
-    def __init__(self, r, c, m):
+    def __init__(self):
+        self.rows = 0
+        self.cols = 0
+        self.mines = 0
+        self.boxes_left = 0
+        self.mine_pos = []
+        self.shown = []
+        self.values = []
 
+    def set_all(self, r, c, m):
         self.rows = r
         self.cols = c
         self.mines = m
@@ -73,40 +88,80 @@ class Board:
 window = Tk()
 window.title("MineSweeper")
 
-# label1 = Label(window, text="Select difficulty", font=20)
-# label1.grid(row=0, column=0, columnspan=8)
+board = Board()
 
-# Create board object
 
-rows = 13
-cols = 13
-mines = 27  #Adri guapo
+# Yet to implement
+def Clock():
+    clock = Label(text="000", height=2, font=20)
+    clock.grid(row=0, column=0, columnspan=3)
+    t1 = time.perf_counter()
+    a = 1
 
-board = Board(rows, cols, mines)
-
-# Create button matrix and display it
-buttons = []
+    while True:
+        t2 = time.perf_counter()
+        m = int(t2 - t1)
+        if m > a:
+            a += 1
+            clock["text"] = '{:0>3}'.format(m)
 
 
 def BuildBoard():
-    global buttons
-    global board
+    global buttons, board
+
+    for widgets in window.winfo_children():
+        widgets.destroy()
+
+    # Tkinter no funciona muy bien con los hilos al parecer :(
+    # clock = threading.Thread(target=Clock)
+    # clock.start()
 
     for x in range(0, board.rows):
         buttons.append([])
         for y in range(0, board.cols):
-            b = Button(window, text=" ", font=4, height=2, bg="grey", width=4,
+            b = Button(window, text=" ", font=4, height=1, width=2, bg="grey",
                        command=lambda x=x, y=y: clickOn(x, y))
-            b.bind("<Button-3>", lambda e, x=x, y=y: onRightClick(x, y))
+            b.bind("<Button-3>", lambda x=x, y=y: rightClickOn(x, y))
             b.grid(row=x + 1, column=y, sticky=N + W + S + E)
             buttons[x].append(b)
 
 
-BuildBoard()
+def EasyMode():
+    global board
+    board.set_all(8, 8, 10)
+    BuildBoard()
+
+
+def MidMode():
+    global board, speed
+    speed = 1 / 15
+    board.set_all(16, 16, 40)
+    BuildBoard()
+
+
+def HardMode():
+    global board, speed
+    speed = 1 / 30
+    board.set_all(16, 30, 99)
+    BuildBoard()
+
+
+def ShowMenu():
+    label1 = Label(window, text="Select difficulty", font=20, background="thistle1", height=3, width=40)
+    label1.grid(row=0, column=0, columnspan=8)
+    button_easy = Button(window, text="Easy", font=20, background="cyan2", height=3, width=40, command=EasyMode)
+    button_easy.grid(row=1, column=0)
+    button_medium = Button(window, text="Mid", font=20, background="yellow2", height=3, width=40, command=MidMode)
+    button_medium.grid(row=2, column=0)
+    button_hard = Button(window, text="Hard", font=20, background="red2", height=3, width=40, command=HardMode)
+    button_hard.grid(row=3, column=0)
+
+
+ShowMenu()
 
 
 # Flag mechanics.
-def onRightClick(x, y):
+def rightClickOn(x, y):
     if not board.shown[x][y]:
         if buttons[x][y]["text"] == "!":
             buttons[x][y]["text"] = "?"
@@ -119,8 +174,9 @@ def onRightClick(x, y):
 # Recursive function, reveals the clicked box and if it's an empty box it shows al the nearby ones by executing this
 # same function on them. If its a mine, you lose instantly and the program is interrupted. It also checks the number of
 # boxes left to win, and when the number reaches 0, it shows the win screen.
+
 def clickOn(x, y):
-    global buttons, clicks, board, rows, cols, mines
+    global buttons, clicks, board
     clicks += 1
 
     # We set up the board right after the first click, in order not to lose instantly
@@ -135,15 +191,14 @@ def clickOn(x, y):
 
         board.mine_pos.remove((x, y))
         shown_mines = 0
-        t1 = datetime.now()
-        a = 1 / 3
+        t1 = time.perf_counter()
+        a = speed
 
         while shown_mines < len(board.mine_pos):
-            t2 = datetime.now()
-            m = (t2.minute * 60 + t2.second + (int(t2.microsecond / 100000) / 10) - t1.minute * 60 - t1.second - (
-                    int(t1.microsecond / 100000) / 10))
+            t2 = time.perf_counter()
+            m = (round(t2 - t1, 2))
             if m > a:
-                a += 1 / 3
+                a += speed
                 i = board.mine_pos[shown_mines][0]
                 j = board.mine_pos[shown_mines][1]
                 shown_mines += 1
@@ -157,7 +212,7 @@ def clickOn(x, y):
         # Loss screen
         window2 = Tk()
         window2.title("pringao")
-        l = Label(window2, text="Eres malardo", font=20, padx=80, pady=20)
+        l = Label(window2, text="Has perdido", font=20, padx=80, pady=20)
         l.grid(row=0, column=0)
         b = Button(window2, width=4, text="ok :'(", font=20, bg="grey", command=lambda: exit())
         b.grid(row=1, column=0)
@@ -198,7 +253,7 @@ def clickOn(x, y):
         # Win screen
         window2 = Tk()
         window2.title("epico")
-        l = Label(window2, text="Has ganao tiaco", font=20, padx=20, pady=20)
+        l = Label(window2, text="Has ganao tiaco", font=20, padx=80, pady=20)
         l.grid(row=0, column=0)
         b = Button(window2, width=6, text="yay! :D", font=20, bg="blue", command=lambda: exit())
         b.grid(row=1, column=0)
