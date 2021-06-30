@@ -7,6 +7,7 @@ clicks = 0
 colors = ["blue", "green", "red", "orange", "pink", "black", "cyan", "purple"]
 buttons = []
 speed = 1 / 5
+flag_num = 0
 
 
 ###################################################################################
@@ -87,8 +88,10 @@ class Board:
 
 window = Tk()
 window.title("MineSweeper")
+window.config(bg="grey")
 
 board = Board()
+mine_counter = Label
 
 
 # Yet to implement
@@ -107,7 +110,7 @@ def Clock():
 
 
 def BuildBoard():
-    global buttons, board
+    global mine_counter
 
     for widgets in window.winfo_children():
         widgets.destroy()
@@ -116,44 +119,50 @@ def BuildBoard():
     # clock = threading.Thread(target=Clock)
     # clock.start()
 
+    mine_counter = Label(window, font=20, text="Mines left: "+str(board.mines), bg="grey", height=3)
+    mine_counter.grid(row=0, column=0, columnspan=board.cols)
+
     for x in range(0, board.rows):
         buttons.append([])
         for y in range(0, board.cols):
             b = Button(window, text=" ", font=4, height=1, width=2, bg="grey",
                        command=lambda x=x, y=y: clickOn(x, y))
-            b.bind("<Button-3>", lambda x=x, y=y: rightClickOn(x, y))
+            b.bind("<Button-3>", lambda e, x=x, y=y: rightClickOn(x, y))
             b.grid(row=x + 1, column=y, sticky=N + W + S + E)
             buttons[x].append(b)
 
 
 def EasyMode():
-    global board
+    global speed
+    speed = 1 / 5
     board.set_all(8, 8, 10)
     BuildBoard()
 
 
 def MidMode():
-    global board, speed
+    global speed
     speed = 1 / 15
     board.set_all(16, 16, 40)
     BuildBoard()
 
 
 def HardMode():
-    global board, speed
+    global speed
     speed = 1 / 30
     board.set_all(16, 30, 99)
     BuildBoard()
 
 
 def ShowMenu():
-    label1 = Label(window, text="Select difficulty", font=20, background="thistle1", height=3, width=40)
+    label1 = Label(window, text="Select difficulty", font=20, background="grey", height=3, width=20)
     label1.grid(row=0, column=0, columnspan=8)
-    button_easy = Button(window, text="Easy", font=20, background="cyan2", height=3, width=40, command=EasyMode)
+    button_easy = Button(window, text="Easy", font=20, background="cyan2", height=3, width=20, padx=20,
+                         command=EasyMode)
     button_easy.grid(row=1, column=0)
-    button_medium = Button(window, text="Mid", font=20, background="yellow2", height=3, width=40, command=MidMode)
+    button_medium = Button(window, text="Medium", font=20, background="yellow2", height=3, width=20, padx=20,
+                           command=MidMode)
     button_medium.grid(row=2, column=0)
-    button_hard = Button(window, text="Hard", font=20, background="red2", height=3, width=40, command=HardMode)
+    button_hard = Button(window, text="Hard", font=20, background="red2", height=3, width=20, padx=20, command=HardMode)
     button_hard.grid(row=3, column=0)
 
 
@@ -162,13 +171,22 @@ ShowMenu()
 
 # Flag mechanics.
 def rightClickOn(x, y):
+    global mine_counter, flag_num
+
     if not board.shown[x][y]:
         if buttons[x][y]["text"] == "!":
             buttons[x][y]["text"] = "?"
+            flag_num -= 1
         elif buttons[x][y]["text"] == "?":
             buttons[x][y]["text"] = " "
         else:
             buttons[x][y]["text"] = "!"
+            flag_num += 1
+
+        if board.mines - flag_num >= 0:
+            mine_counter["text"] = "Mines left: "+str(board.mines - flag_num)
+
+        window.update_idletasks()
 
 
 # Recursive function, reveals the clicked box and if it's an empty box it shows al the nearby ones by executing this
@@ -176,7 +194,7 @@ def rightClickOn(x, y):
 # boxes left to win, and when the number reaches 0, it shows the win screen.
 
 def clickOn(x, y):
-    global buttons, clicks, board
+    global clicks
     clicks += 1
 
     # We set up the board right after the first click, in order not to lose instantly
@@ -214,7 +232,7 @@ def clickOn(x, y):
         window2.title("pringao")
         l = Label(window2, text="Has perdido", font=20, padx=80, pady=20)
         l.grid(row=0, column=0)
-        b = Button(window2, width=4, text="ok :'(", font=20, bg="grey", command=lambda: exit())
+        b = Button(window2, width=4, text="ok :'(", font=20, bg="red", command=lambda: exit())
         b.grid(row=1, column=0)
         window2.mainloop()
 
@@ -255,7 +273,7 @@ def clickOn(x, y):
         window2.title("epico")
         l = Label(window2, text="Has ganao tiaco", font=20, padx=80, pady=20)
         l.grid(row=0, column=0)
-        b = Button(window2, width=6, text="yay! :D", font=20, bg="blue", command=lambda: exit())
+        b = Button(window2, width=6, text="yay! :D", font=20, bg="cyan", command=lambda: exit())
         b.grid(row=1, column=0)
         window2.mainloop()
 
