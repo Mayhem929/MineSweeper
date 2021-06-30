@@ -3,11 +3,13 @@ import random
 import time
 import threading
 
-clicks = 0
+# Global variables
 colors = ["blue", "green", "red", "orange", "pink", "black", "cyan", "purple"]
 buttons = []
-speed = 1 / 5
+speed = 0
+clicks = 0
 flag_num = 0
+width = 2
 
 
 ###################################################################################
@@ -36,6 +38,8 @@ class Board:
 
     def set_mines(self, fx, fy):
 
+        # Avoid generating mines near the first click position by setting the unavailable
+        # positions to the aux value -2
         aux1 = -1
         while aux1 <= 1:
             aux2 = -1
@@ -57,6 +61,7 @@ class Board:
             self.values[x][y] = -1
             self.mine_pos.append((x, y))
 
+        # Once mines are correctly generated, the altered values are set to 0 again
         aux1 = -1
         while aux1 <= 1:
             aux2 = -1
@@ -66,6 +71,8 @@ class Board:
                 aux2 += 1
             aux1 += 1
 
+        # In this nested loop each position in values matrix is added 1 for
+        # each -1 (value for mine) nearby it
         for i in range(self.rows):
 
             for j in range(self.cols):
@@ -109,6 +116,7 @@ def Clock():
             clock["text"] = '{:0>3}'.format(m)
 
 
+# Builds the button object matrix using board and displays it, along with the mine counter.
 def BuildBoard():
     global mine_counter
 
@@ -119,13 +127,13 @@ def BuildBoard():
     # clock = threading.Thread(target=Clock)
     # clock.start()
 
-    mine_counter = Label(window, font=20, text="Mines left: "+str(board.mines), bg="grey", height=3)
+    mine_counter = Label(window, font=20, text="Mines left: " + str(board.mines), bg="grey", height=3)
     mine_counter.grid(row=0, column=0, columnspan=board.cols)
 
     for x in range(0, board.rows):
         buttons.append([])
         for y in range(0, board.cols):
-            b = Button(window, text=" ", font=4, height=1, width=2, bg="grey",
+            b = Button(window, text=" ", font=4, height=1, width=width, bg="grey",
                        command=lambda x=x, y=y: clickOn(x, y))
             b.bind("<Button-3>", lambda e, x=x, y=y: rightClickOn(x, y))
             b.grid(row=x + 1, column=y, sticky=N + W + S + E)
@@ -147,7 +155,8 @@ def MidMode():
 
 
 def HardMode():
-    global speed
+    global speed, width
+    width = 1
     speed = 1 / 30
     board.set_all(16, 30, 99)
     BuildBoard()
@@ -166,9 +175,6 @@ def ShowMenu():
     button_hard.grid(row=3, column=0)
 
 
-ShowMenu()
-
-
 # Flag mechanics.
 def rightClickOn(x, y):
     global mine_counter, flag_num
@@ -184,7 +190,7 @@ def rightClickOn(x, y):
             flag_num += 1
 
         if board.mines - flag_num >= 0:
-            mine_counter["text"] = "Mines left: "+str(board.mines - flag_num)
+            mine_counter["text"] = "Mines left: " + str(board.mines - flag_num)
 
         window.update_idletasks()
 
@@ -192,7 +198,6 @@ def rightClickOn(x, y):
 # Recursive function, reveals the clicked box and if it's an empty box it shows al the nearby ones by executing this
 # same function on them. If its a mine, you lose instantly and the program is interrupted. It also checks the number of
 # boxes left to win, and when the number reaches 0, it shows the win screen.
-
 def clickOn(x, y):
     global clicks
     clicks += 1
@@ -277,5 +282,8 @@ def clickOn(x, y):
         b.grid(row=1, column=0)
         window2.mainloop()
 
+
+# "Main" function
+ShowMenu()
 
 window.mainloop()
