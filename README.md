@@ -1,4 +1,9 @@
 # MineSweeper
-Needs tkinter to be installed.
-Board class implemented by Cristobal and Carlos.
-GUI part implemented by me.
+
+to run the program, use:
+
+```bash
+sudo apt-get install python-tk
+python3 
+
+```
