@@ -53,7 +53,6 @@ class Board:
 
             x = random.randint(0, self.rows - 1)
             y = random.randint(0, self.cols - 1)
-
             while self.values[x][y] == -1 or self.values[x][y] == -2:
                 x = random.randint(0, self.rows - 1)
                 y = random.randint(0, self.cols - 1)
@@ -93,13 +92,27 @@ class Board:
 ################################### GUI PART ######################################
 ###################################################################################
 
+def setPos(window):
+    # Get the dimensions of the screen
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+
+    # Calculate the x and y coordinates to center the window
+    x = (screen_width - window.winfo_reqwidth()) / 2
+    y = (screen_height - window.winfo_reqheight()) / 2
+
+    # Set the position of the window
+    window.geometry("+%d+%d" % (x, y))
+
+
 window = Tk()
 window.title("MineSweeper")
 window.config(bg="grey")
 
+setPos(window)
+
 board = Board()
 mine_counter = Label
-
 
 # Yet to implement
 def Clock():
@@ -117,17 +130,14 @@ def Clock():
 
 
 # Builds the button object matrix using board and displays it, along with the mine counter.
-def BuildBoard():
+def BuildBoard(color):
     global mine_counter
 
     for widgets in window.winfo_children():
         widgets.destroy()
 
-    # Tkinter no funciona muy bien con los hilos al parecer :(
-    # clock = threading.Thread(target=Clock)
-    # clock.start()
-
-    mine_counter = Label(window, font=20, text="Mines left: " + str(board.mines), bg="grey", height=3)
+    window.config(bg=color)
+    mine_counter = Label(window, font=20, text="Mines left: " + str(board.mines), bg=color, height=3)
     mine_counter.grid(row=0, column=0, columnspan=board.cols)
 
     for x in range(0, board.rows):
@@ -139,19 +149,22 @@ def BuildBoard():
             b.grid(row=x + 1, column=y, sticky=N + W + S + E)
             buttons[x].append(b)
 
+    window.update_idletasks()
+    setPos(window)
+
 
 def EasyMode():
     global speed
     speed = 1 / 5
     board.set_all(8, 8, 10)
-    BuildBoard()
+    BuildBoard("cyan2")
 
 
 def MidMode():
     global speed
     speed = 1 / 15
     board.set_all(16, 16, 40)
-    BuildBoard()
+    BuildBoard("yellow2")
 
 
 def HardMode():
@@ -159,7 +172,7 @@ def HardMode():
     width = 1
     speed = 1 / 30
     board.set_all(16, 30, 99)
-    BuildBoard()
+    BuildBoard("red2")
 
 
 def ShowMenu():
@@ -175,9 +188,9 @@ def ShowMenu():
     button_hard.grid(row=3, column=0)
 
 
-# Flag mechanics.
+# Flag mechanics
 def rightClickOn(x, y):
-    global mine_counter, flag_num
+    global flag_num, board, mine_counter
 
     if not board.shown[x][y]:
         if buttons[x][y]["text"] == "!":
@@ -197,9 +210,9 @@ def rightClickOn(x, y):
 
 # Recursive function, reveals the clicked box and if it's an empty box it shows al the nearby ones by executing this
 # same function on them. If its a mine, you lose instantly and the program is interrupted. It also checks the number of
-# boxes left to win, and when the number reaches 0, it shows the win screen.
+# boxes left to win, and when the number reaches 0, it shows the win screen
 def clickOn(x, y):
-    global clicks
+    global clicks, flag_num, board, mine_counter
     clicks += 1
 
     # We set up the board right after the first click, in order not to lose instantly
@@ -234,15 +247,32 @@ def clickOn(x, y):
 
         # Loss screen
         window2 = Tk()
-        window2.title("pringao")
-        l = Label(window2, text="Has perdido", font=20, padx=80, pady=20)
+        window2.title("Defeat")
+
+        # Get the dimensions of the screen
+        screen_width = window2.winfo_screenwidth()
+        screen_height = window2.winfo_screenheight()
+
+        # Calculate the x and y coordinates to center the window
+        a = (screen_width - window2.winfo_reqwidth()) / 2
+        b = (screen_height - window2.winfo_reqheight()) / 2
+
+        # Set the position of the window
+        window2.geometry("+%d+%d" % (a, b))
+
+        l = Label(window2, text="You lost", font=20, padx=80, pady=20)
         l.grid(row=0, column=0)
-        b = Button(window2, width=4, text="ok :'(", font=20, bg="red", command=lambda: exit())
+        b = Button(window2, width=4, text="Close", font=20, bg="red", command=lambda: exit())
         b.grid(row=1, column=0)
         window2.mainloop()
 
     # Case box has mines close
     if 9 > board.values[x][y] > 0:
+	    
+        if buttons[x][y]["text"] == "!":
+            flag_num -= 1
+            mine_counter["text"] = "Mines left: " + str(board.mines - flag_num)
+        
         buttons[x][y]["text"] = str(board.values[x][y])
         buttons[x][y]["bg"] = "white"
         buttons[x][y]["disabledforeground"] = colors[board.values[x][y] - 1]
@@ -265,7 +295,6 @@ def clickOn(x, y):
 
     # Check win condition
     if board.boxes_left == 0:
-        print("has ganao")
         for widget in window.winfo_children():
             widget["state"] = "disabled"
 
@@ -275,15 +304,18 @@ def clickOn(x, y):
 
         # Win screen
         window2 = Tk()
-        window2.title("epico")
-        l = Label(window2, text="Has ganao tiaco", font=20, padx=80, pady=20)
+        window2.title("Victory!")
+        l = Label(window2, text="You won!", font=20, padx=80, pady=20)
         l.grid(row=0, column=0)
-        b = Button(window2, width=6, text="yay! :D", font=20, bg="cyan", command=lambda: exit())
+        b = Button(window2, width=6, text="Cool!", font=20, bg="cyan", command=lambda: exit())
         b.grid(row=1, column=0)
         window2.mainloop()
 
 
 # "Main" function
+
 ShowMenu()
 
 window.mainloop()
+
+
