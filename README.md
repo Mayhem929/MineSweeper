@@ -1,9 +1,8 @@
 # MineSweeper
 
-to run the program, use:
+To run the program, use:
 
 ```bash
 sudo apt-get install python-tk
-python3 
-
+python3 src/app.py
 ```
